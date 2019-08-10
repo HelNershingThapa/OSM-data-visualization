@@ -60,22 +60,7 @@
       async function getISS() {
         const response = await fetch(api_url);                
         const data = await response.json();
-        
-debugger
-        
-        // let parser = new DOMParser();
-        // let marker=[]
-        
-        // let xml = parser.parseFromString(data, "application/xml");
-        // let json = xml2json(xml)
-        // let newJSON = JSON.parse(`{${json.slice(11, json.length)}`)
-        
-        // for(i=0; i<newJSON.length;i++){
-        //  let latitude= Number( newJSON.osm.node[i]['@lat'])
-        //  let longitude= Number( newJSON.osm.node[i]['@lon'])               		
-        // marker = new L.marker(latitude,longitude)
-				// .bindPopup(newJSON[i][0])
-				// .addTo(map);
+
 
          for (var i = 0; i < data.elements.length; ++i) {
           L.marker(data.elements[i].lat, data.elements[i].lng)
@@ -86,10 +71,6 @@ debugger
         
         // marker[i].setLatLng([latitude, longitude]);         
       }
-        if (firstTime) {
-         mymap.setView([latitude, longitude], 2);
-          firstTime = false;
-        }
         //  document.getElementById('lat').textContent = latitude.toFixed(2);
         //  document.getElementById('lon').textContent = longitude.toFixed(2);
     // }
