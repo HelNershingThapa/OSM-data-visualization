@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=\, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     <link
       rel="stylesheet"
@@ -15,58 +15,87 @@
       integrity="sha512-QVftwZFqvtRNi0ZyCtsznlKSWOStnDORoefr1enyq5mVL4tmKB3S/EnC3rRJcxCPavG10IcrVGSmPh6Qw5lwrg=="
       crossorigin=""
     ></script>
+    <script src="https://unpkg.com/osmtogeojson@2.2.12/osmtogeojson.js"></script>
+
     <!-- <script src="./xml2json.js">  </script> -->
     <style>
-      #issMap {
-        height: 300px;
-        width:1000px;
+      body {
+        padding: 0;
+        margin: 0;
+      }
+      html, body, #map {
+        height: 100%;
+        width: 100%;
+      }
+      #overpass-api-controls {
+        padding: 10px;
+        background-color: rgb(255, 255, 255);
+      }
+      #overpass-api-controls a {
+        display: inline;
       }
     </style>
 
     <title>Fetch JSON from API and map lat lon</title>
   </head>
   <body>
-    <h1>Where is the ISS?</h1>
+   
 
-    <p>
-      latitude: <span id="lat"></span>°<br />
-      longitude: <span id="lon"></span>°
-    </p>
-
-    <div id="issMap"></div>
+    <div id="map"></div>
 
     <script>
       // Making a map and tiles
-      const mymap = L.map('issMap').setView([27.717245, 85.323959], 12);
+      const map = L.map('map').setView([27.717245, 85.323959], 12);
       const attribution =
         '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
       const tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
       const tiles = L.tileLayer(tileUrl, { attribution });
-      tiles.addTo(mymap);
-      
-      // Making a marker with a custom icon
-      // const issIcon = L.icon({
-      //   iconUrl: 'school.png',
-      //   iconSize: [50, 32],
-      //   iconAnchor: [25, 16]
-      // });
-      
-      const marker = L.marker([27.717245, 85.323959]).addTo(mymap);
-      // marker = [];
-      const api_url = 'http://overpass-api.de/api/interpreter?data=[out:json][timeout:25]; area(3604583247)->.searchArea; ( node["amenity"="school"](area.searchArea); way["amenity"="school"](area.searchArea); relation["amenity"="school"](area.searchArea); ); out body; >; out skel qt;';
-      // const api_url1='https://api.wheretheiss.at/v1/satellites/25544';
-      
-      let firstTime = true;
-      async function getISS() {
-        const response = await fetch(api_url);                
+      tiles.addTo(map);
+     
+      function buildOverpassApiUrl(map, overpassQuery) {
+        var bounds = map.getBounds().getSouth() + ',' + map.getBounds().getWest() + ',' + map.getBounds().getNorth() + ',' + map.getBounds().getEast();
+        var nodeQuery = 'node[' + overpassQuery + '](' + bounds + ');';
+        var wayQuery = 'way[' + overpassQuery + '](' + bounds + ');';
+        var relationQuery = 'relation[' + overpassQuery + '](' + bounds + ');';
+        var query = '?data=[out:json][timeout:15];(' + nodeQuery + wayQuery + relationQuery + ');out body geom;';
+        var baseUrl = 'http://overpass-api.de/api/interpreter';
+        var resultUrl = baseUrl + query;
+        return resultUrl;
+      }
+
+      async function getMapResource() {
+        let overpassApiUrl = buildOverpassApiUrl(map, 'amenity=school');
+          debugger
+        const response = await fetch(overpassApiUrl);                
         const data = await response.json();
+        let geoData = osmtogeojson(data);
+        
+        const resultLayer = L.geoJson(geoData, {
+            style: function (feature) {
+              return {color: "#ff0000"};
+            },
+            filter: function (feature, layer) {
+              var isPolygon = (feature.geometry) && (feature.geometry.type) && (feature.geometry.type === "Polygon");
+              if (isPolygon) {
+                feature.geometry.type = "Point";
+                var polygonCenter = L.latLngBounds(feature.geometry.coordinates[0]).getCenter();
+                feature.geometry.coordinates = [ polygonCenter.lat, polygonCenter.lng ];
+              }
+              return true;
+            },
+            onEachFeature: function (feature, layer) {
+              var popupContent = "";
+              popupContent = popupContent + "<dt>@id</dt><dd>" + feature.properties.type + "/" + feature.properties.id + "</dd>";
+              var keys = Object.keys(feature.properties.tags);
+              keys.forEach(function (key) {
+                popupContent = popupContent + "<dt>" + key + "</dt><dd>" + feature.properties.tags[key] + "</dd>";
+              });
+              popupContent = popupContent + "</dl>"
+              layer.bindPopup(popupContent);
+            }
+          }).addTo(map);
 
-
-         for (var i = 0; i < data.elements.length; ++i) {
-          L.marker(data.elements[i].lat, data.elements[i].lng)
-            // .bindPopup( '<a href="' +data.elements[i].url + '" target="_blank">' + data.elements[i].name + '</a>' )
-            .addTo(mymap);
-        }
+        
 
         
         // marker[i].setLatLng([latitude, longitude]);         
@@ -74,7 +103,7 @@
         //  document.getElementById('lat').textContent = latitude.toFixed(2);
         //  document.getElementById('lon').textContent = longitude.toFixed(2);
     // }
-      getISS();
+    getMapResource();
       // setInterval(getISS, 1000);
     </script>
   </body>
