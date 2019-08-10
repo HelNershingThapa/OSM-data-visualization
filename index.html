@@ -1,50 +1,114 @@
 <!DOCTYPE html>
-<html>
-<head>
-    <title>Simple Leaflet Map</title>
-    <meta charset="utf-8" />
-    <link 
-        rel="stylesheet" 
-        href="http://cdn.leafletjs.com/leaflet-0.7/leaflet.css"
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.4.0/dist/leaflet.css"
+      integrity="sha512-puBpdR0798OZvTTbP4A8Ix/l+A4dHDD0DGqYW6RQ+9jxkRFclaxxQb/SJAWZfWAkuyeQUytO7+7N4QKrDh+drA=="
+      crossorigin=""
     />
-</head>
-<body>
+    <script  
+    src="https://unpkg.com/leaflet@1.4.0/dist/leaflet.js"
+      integrity="sha512-QVftwZFqvtRNi0ZyCtsznlKSWOStnDORoefr1enyq5mVL4tmKB3S/EnC3rRJcxCPavG10IcrVGSmPh6Qw5lwrg=="
+      crossorigin=""
+    ></script>
+    <script src="https://unpkg.com/osmtogeojson@2.2.12/osmtogeojson.js"></script>
 
-    <div id="map" style="width: 600px; height: 400px"></div>
+    <!-- <script src="./xml2json.js">  </script> -->
+    <style>
+      body {
+        padding: 0;
+        margin: 0;
+      }
+      html, body, #map {
+        height: 100%;
+        width: 100%;
+      }
+      #overpass-api-controls {
+        padding: 10px;
+        background-color: rgb(255, 255, 255);
+      }
+      #overpass-api-controls a {
+        display: inline;
+      }
+    </style>
 
-    <script
-        src="http://cdn.leafletjs.com/leaflet-0.7/leaflet.js">
-    </script>
+    <title>Fetch JSON from API and map lat lon</title>
+  </head>
+  <body>
+   
+
+    <div id="map"></div>
 
     <script>
+      // Making a map and tiles
+      const map = L.map('map').setView([27.717245, 85.323959], 12);
+      const attribution =
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+      const tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+      const tiles = L.tileLayer(tileUrl, { attribution });
+      tiles.addTo(map);
 
-	let planes = [
-		["7C6B07",-40.99497,174.50808],
-		["7C6B38",-41.30269,173.63696],
-		["7C6CA1",-41.49413,173.5421],
-		["7C6CA2",-40.98585,174.50659],
-		["C81D9D",-40.93163,173.81726],
-		["C82009",-41.5183,174.78081],
-		["C82081",-41.42079,173.5783],
-		["C820AB",-42.08414,173.96632],
-		["C820B6",-41.51285,173.53274]
-		];
+      function buildOverpassApiUrl(map, overpassQuery, place) {
+        let customBounds = {
+          default: map.getBounds().getSouth() + ',' + map.getBounds().getWest() + ',' + map.getBounds().getNorth() + ',' + map.getBounds().getEast(),
+          kathmandu: '3604583247',
+        }
+        let searchAreaQuery = `area(${customBounds[place]})->.searchArea;`
 
-        let map = L.map('map').setView([-41.3058, 174.82082], 8);
-        mapLink = 
-            '<a href="http://openstreetmap.org">OpenStreetMap</a>';
-        L.tileLayer(
-            'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; ' + mapLink + ' Contributors',
-            maxZoom: 18,
-            }).addTo(map);
+        var nodeQuery = 'node[' + overpassQuery + '](area.searchArea);';
+        var wayQuery = 'way[' + overpassQuery + '](area.searchArea);';
+        var relationQuery = 'relation[' + overpassQuery + '](area.searchArea);';
+        var query = '?data=[out:json][timeout:25];' + searchAreaQuery + '(' + nodeQuery + wayQuery + relationQuery + ');out body geom;';
+        var baseUrl = 'http://overpass-api.de/api/interpreter';
+        var resultUrl = baseUrl + query;
+        return resultUrl;
+      }
 
-		for (let i = 0; i < planes.length; i++) {
-			marker = new L.marker([planes[i][1],planes[i][2]])
-				.bindPopup(planes[i][0])
-				.addTo(map);
-		}
-               
+      async function getMapResource() {
+        let overpassApiUrl = buildOverpassApiUrl(map, 'amenity=school', 'kathmandu');          
+        const response = await fetch(overpassApiUrl);                
+        const data = await response.json();
+        let geoData = osmtogeojson(data);
+        
+        const resultLayer = L.geoJson(geoData, {
+            style: (feature) => {
+              return {color: "#330099"};
+            },
+            filter: (feature, layer) => {
+              var isPolygon = (feature.geometry) && (feature.geometry.type) && (feature.geometry.type === "Polygon");
+              if (isPolygon) {
+                feature.geometry.type = "Point";
+                var polygonCenter = L.latLngBounds(feature.geometry.coordinates[0]).getCenter();
+                feature.geometry.coordinates = [ polygonCenter.lat, polygonCenter.lng ];
+              }
+              return true;
+            },
+            onEachFeature: (feature, layer) => {
+              var popupContent = "";
+              popupContent = popupContent + "<dt>@id</dt><dd>" + feature.properties.type + "/" + feature.properties.id + "</dd>";
+              var keys = Object.keys(feature.properties.tags);
+              keys.forEach(function (key) {
+                popupContent = popupContent + "<dt>" + key + "</dt><dd>" + feature.properties.tags[key] + "</dd>";
+              });
+              popupContent = popupContent + "</dl>"
+              layer.bindPopup(popupContent);
+            }
+          }).addTo(map);
+
+        
+
+        
+        // marker[i].setLatLng([latitude, longitude]);         
+      }
+        //  document.getElementById('lat').textContent = latitude.toFixed(2);
+        //  document.getElementById('lon').textContent = longitude.toFixed(2);
+    // }
+    getMapResource();
+      // setInterval(getISS, 1000);
     </script>
-</body>
+  </body>
 </html>
