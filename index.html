@@ -38,9 +38,7 @@
 
     <title>Fetch JSON from API and map lat lon</title>
   </head>
-  <body>
-   
-
+  <body>   
     <div id="map"></div>
 
     <script>
@@ -59,17 +57,17 @@
         }
         let searchAreaQuery = `area(${customBounds[place]})->.searchArea;`
 
-        var nodeQuery = 'node[' + overpassQuery + '](area.searchArea);';
-        var wayQuery = 'way[' + overpassQuery + '](area.searchArea);';
-        var relationQuery = 'relation[' + overpassQuery + '](area.searchArea);';
-        var query = '?data=[out:json][timeout:25];' + searchAreaQuery + '(' + nodeQuery + wayQuery + relationQuery + ');out body geom;';
-        var baseUrl = 'http://overpass-api.de/api/interpreter';
-        var resultUrl = baseUrl + query;
+        var nodeQuery = `node[${overpassQuery}](area.searchArea);`
+        var wayQuery = `way[${overpassQuery}](area.searchArea);`
+        var relationQuery = `relation[${overpassQuery}](area.searchArea);`
+        var query = `?data=[out:json][timeout:25];${searchAreaQuery}(${nodeQuery}${wayQuery}${relationQuery});out body geom;`
+        var baseUrl = 'http://overpass-api.de/api/interpreter'
+        var resultUrl = baseUrl + query
         return resultUrl;
       }
 
       async function getMapResource() {
-        let overpassApiUrl = buildOverpassApiUrl(map, 'amenity=school', 'kathmandu');          
+        let overpassApiUrl = buildOverpassApiUrl(map, 'amenity=school', 'kathmandu');         
         const response = await fetch(overpassApiUrl);                
         const data = await response.json();
         let geoData = osmtogeojson(data);
@@ -98,14 +96,8 @@
               layer.bindPopup(popupContent);
             }
           }).addTo(map);
-
-        
-
-        
-        // marker[i].setLatLng([latitude, longitude]);         
       }
-        //  document.getElementById('lat').textContent = latitude.toFixed(2);
-        //  document.getElementById('lon').textContent = longitude.toFixed(2);
+      
     // }
     getMapResource();
       // setInterval(getISS, 1000);
