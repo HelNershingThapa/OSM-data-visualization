@@ -1,205 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.4.0/dist/leaflet.css"
-      integrity="sha512-puBpdR0798OZvTTbP4A8Ix/l+A4dHDD0DGqYW6RQ+9jxkRFclaxxQb/SJAWZfWAkuyeQUytO7+7N4QKrDh+drA=="
-      crossorigin=""
-    />
-    <script  
-    src="https://unpkg.com/leaflet@1.4.0/dist/leaflet.js"
-      integrity="sha512-QVftwZFqvtRNi0ZyCtsznlKSWOStnDORoefr1enyq5mVL4tmKB3S/EnC3rRJcxCPavG10IcrVGSmPh6Qw5lwrg=="
-      crossorigin=""
-    ></script>
-    <script src="https://unpkg.com/osmtogeojson@2.2.12/osmtogeojson.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.11/lodash.min.js"></script>
-    <script src="https://www.amcharts.com/lib/4/core.js"></script>
-    <script src="https://www.amcharts.com/lib/4/charts.js"></script>
-    <script src="https://www.amcharts.com/lib/4/themes/animated.js"></script>
 
-    <!-- <script src="./xml2json.js">  </script> -->
-    <style>
-      body {
-        padding: 0;
-        margin: 0;
-      }
-      html, body {
-        height: 100%;
-        width: 100%;
-      }
-      #overpass-api-controls {
-        padding: 10px;
-        background-color: rgb(255, 255, 255);
-      }
-      #overpass-api-controls a {
-        display: inline;
-      }
-      .dashboard-wrapper {
-        display: flex;
-        flex-flow: row wrap;
-        justify-content: flex-start;
-        height: 100%;
-        padding:10px;
-        background: #AAFFA9;  /* fallback for old browsers */
-        background: -webkit-linear-gradient(to right, #11FFBD, #AAFFA9);  /* Chrome 10-25, Safari 5.1-6 */
-        background: linear-gradient(to right, #11FFBD, #AAFFA9); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.4.0/dist/leaflet.css"
+    integrity="sha512-puBpdR0798OZvTTbP4A8Ix/l+A4dHDD0DGqYW6RQ+9jxkRFclaxxQb/SJAWZfWAkuyeQUytO7+7N4QKrDh+drA=="
+    crossorigin="" />
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="https://unpkg.com/leaflet@1.4.0/dist/leaflet.js"
+    integrity="sha512-QVftwZFqvtRNi0ZyCtsznlKSWOStnDORoefr1enyq5mVL4tmKB3S/EnC3rRJcxCPavG10IcrVGSmPh6Qw5lwrg=="
+    crossorigin=""></script>
+  <script src="https://unpkg.com/osmtogeojson@2.2.12/osmtogeojson.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.11/lodash.min.js"></script>
 
 
-      }
-      #map {
-        height: 350px;
-        flex-basis: 60%;
-        border-radius: 5px;
-        -webkit-box-shadow: 7px 6px 37px -1px rgba(107,107,107,1);
-        -moz-box-shadow: 7px 6px 37px -1px rgba(107,107,107,1);
-        box-shadow: 7px 6px 37px -1px rgba(107,107,107,1);
-      }
-      .chart1{
-        flex-basis: 40%
-      }
-      #chartdiv {
-        width: 100%;
-        height: 360px;
-        
-      }
-    </style>
+  <title>Fetch JSON from API and map lat lon</title>
+</head>
 
-    <title>Fetch JSON from API and map lat lon</title>
-  </head>
-  <body>   
-    <div class="dashboard-wrapper">
-      <div id="map"></div>
-      <div class="chart1">
-          <div id="chartdiv"></div>
-      </div>
-    </div>
-    <script>
-        am4core.ready(function() {
-        
-        // Themes begin
-        am4core.useTheme(am4themes_animated);
-        // Themes end
-        
-        var chart = am4core.create("chartdiv", am4charts.PieChart);
-        chart.hiddenState.properties.opacity = 0; // this creates initial fade-in
-        
-        chart.data = [
-          {
-            country: "Lithuania",
-            value: 401
-          },
-          {
-            country: "Czech Republic",
-            value: 300
-          },
-          {
-            country: "Ireland",
-            value: 200
-          },
-          {
-            country: "Germany",
-            value: 165
-          },
-          {
-            country: "Australia",
-            value: 139
-          },
-          {
-            country: "Austria",
-            value: 128
-          }
-        ];
-        chart.radius = am4core.percent(70);
-        chart.innerRadius = am4core.percent(40);
-        chart.startAngle = 0;
-        chart.endAngle = 360;  
-        
-        var series = chart.series.push(new am4charts.PieSeries());
-        series.dataFields.value = "value";
-        series.dataFields.category = "country";
-        
-        series.slices.template.cornerRadius = 10;
-        series.slices.template.innerCornerRadius = 7;
-        series.slices.template.draggable = true;
-        series.slices.template.inert = true;
-        series.alignLabels = false;
-        
-        series.hiddenState.properties.startAngle = 90;
-        series.hiddenState.properties.endAngle = 90;
-        
-        chart.legend = new am4charts.Legend();
-        
-        }); // end am4core.ready()
-        </script>
-        
-        
-
-
-
-    <script>
-      // Making a map and tiles
-      const map = L.map('map').setView([27.6706, 84.4385], 12);
-      const attribution =
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
-      const tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-      const tiles = L.tileLayer(tileUrl, { attribution });
-      tiles.addTo(map);
-
-      function buildOverpassApiUrl(map, overpassQuery, place) {
-        let customBounds = {
-          default: map.getBounds().getSouth() + ',' + map.getBounds().getWest() + ',' + map.getBounds().getNorth() + ',' + map.getBounds().getEast(),
-          kathmandu: '3604583247',
-          chitwan: '3604589410',
-        }
-        let searchAreaQuery = `area(${customBounds[place]})->.searchArea;`
-
-        var nodeQuery = `node[${overpassQuery}](area.searchArea);`
-        var wayQuery = `way[${overpassQuery}](area.searchArea);`
-        var relationQuery = `relation[${overpassQuery}](area.searchArea);`
-        var query = `?data=[out:json][timeout:25];${searchAreaQuery}(${nodeQuery}${wayQuery}${relationQuery});out body geom;`
-        var baseUrl = 'http://overpass-api.de/api/interpreter'
-        var resultUrl = baseUrl + query
-        return resultUrl;
-      }
-
-      async function getMapResource() {
-        let overpassApiUrl = buildOverpassApiUrl(map, 'amenity=school', 'chitwan');         
-        const response = await fetch(overpassApiUrl);                
-        const data = await response.json();
-        let geoData = osmtogeojson(data);
-        
-        const resultLayer = L.geoJson(geoData, {
-            style: (feature) => {
-              return {color: "#330099"};
-            },
-            filter: (feature, layer) => {
-              var isPolygon = (feature.geometry) && (feature.geometry.type) && (feature.geometry.type === "Polygon");
-              if (isPolygon) {
-                feature.geometry.type = "Point";
-                var polygonCenter = L.latLngBounds(feature.geometry.coordinates[0]).getCenter();
-                feature.geometry.coordinates = [ polygonCenter.lat, polygonCenter.lng ];
-              }
-              return true;
-            },
-            onEachFeature: (feature, layer) => {
-              var popupContent = "";
-              var keys = Object.keys(feature.properties.tags);
-              keys.forEach(function (key) {
-                popupContent = `${popupContent}<dt>${_.capitalize(key)}:</dt><dd>${_.capitalize(feature.properties.tags[key])}</dd>`
-              });
-              popupContent = popupContent + "</dl>"
-              layer.bindPopup(popupContent);
-            }
-          }).addTo(map);
-      }
-      
-    // }
-    getMapResource();
-      // setInterval(getISS, 1000);
-    </script>
-  </body>
+<body>
+  <div class="query-form">
+    <input id = "amenity" type="text">
+    <button onclick="submitQuery()">Submit</button>
+  </div>
+  <div class="dashboard-wrapper">
+    <div id="map"></div>
+  </div>
+</body>
+<script src="js/main.js"></script>
 </html>
