@@ -1,4 +1,6 @@
 const map = L.map('map').setView([27.7172, 85.3240], 12);
+let resultLayer = null
+
 const attribution =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 const tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
@@ -29,7 +31,9 @@ function buildOverpassApiUrl(map, overpassQuery, place) {
   return resultUrl;
 }
 function submitQuery(){
-  
+  if (resultLayer) map.removeLayer(resultLayer)
+
+ 
   const inputValue = document.getElementById('amenity').value
   async function getMapResource() {
     let overpassApiUrl = buildOverpassApiUrl(map, `amenity=${inputValue}`, "default");
@@ -37,8 +41,8 @@ function submitQuery(){
     const data = await response.json();
   
     let geoData = osmtogeojson(data);
-  // TODO: remove layer after each query
-    const resultLayer = L.geoJson(geoData, {
+  // TODO: remove layer on each query
+    resultLayer = L.geoJson(geoData, {
       style: feature => {
         return { color: "#330099" };
       },
