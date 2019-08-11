@@ -16,6 +16,7 @@
       crossorigin=""
     ></script>
     <script src="https://unpkg.com/osmtogeojson@2.2.12/osmtogeojson.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.11/lodash.min.js"></script>
 
     <!-- <script src="./xml2json.js">  </script> -->
     <style>
@@ -23,7 +24,7 @@
         padding: 0;
         margin: 0;
       }
-      html, body, #map {
+      html, body {
         height: 100%;
         width: 100%;
       }
@@ -34,16 +35,43 @@
       #overpass-api-controls a {
         display: inline;
       }
+      .dashboard-wrapper {
+        display: flex;
+        flex-flow: row wrap;
+        justify-content: flex-start;
+        height: 100%;
+        padding:10px;
+        background: #649173;  /* fallback for old browsers */
+        background: -webkit-linear-gradient(to right, #DBD5A4, #649173);  /* Chrome 10-25, Safari 5.1-6 */
+        background: linear-gradient(to right, #DBD5A4, #649173); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+      }
+      #map {
+        height: 350px;
+        flex-basis: 60%;
+        border-radius: 5px;
+        -webkit-box-shadow: 7px 6px 37px -1px rgba(107,107,107,1);
+        -moz-box-shadow: 7px 6px 37px -1px rgba(107,107,107,1);
+        box-shadow: 7px 6px 37px -1px rgba(107,107,107,1);
+      }
+      .chart1{
+        flex-basis: 50%
+      }
     </style>
 
     <title>Fetch JSON from API and map lat lon</title>
   </head>
   <body>   
-    <div id="map"></div>
+    <div class="dashboard-wrapper">
+      <div id="map"></div>
+      <div class="chart1">
+
+      </div>
+    </div>
+   
 
     <script>
       // Making a map and tiles
-      const map = L.map('map').setView([27.717245, 85.323959], 12);
+      const map = L.map('map').setView([27.6706, 84.4385], 12);
       const attribution =
         '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
       const tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
@@ -54,6 +82,7 @@
         let customBounds = {
           default: map.getBounds().getSouth() + ',' + map.getBounds().getWest() + ',' + map.getBounds().getNorth() + ',' + map.getBounds().getEast(),
           kathmandu: '3604583247',
+          chitwan: '3604589410',
         }
         let searchAreaQuery = `area(${customBounds[place]})->.searchArea;`
 
@@ -67,7 +96,7 @@
       }
 
       async function getMapResource() {
-        let overpassApiUrl = buildOverpassApiUrl(map, 'amenity=school', 'kathmandu');         
+        let overpassApiUrl = buildOverpassApiUrl(map, 'amenity=school', 'chitwan');         
         const response = await fetch(overpassApiUrl);                
         const data = await response.json();
         let geoData = osmtogeojson(data);
@@ -87,10 +116,9 @@
             },
             onEachFeature: (feature, layer) => {
               var popupContent = "";
-              popupContent = popupContent + "<dt>@id</dt><dd>" + feature.properties.type + "/" + feature.properties.id + "</dd>";
               var keys = Object.keys(feature.properties.tags);
               keys.forEach(function (key) {
-                popupContent = popupContent + "<dt>" + key + "</dt><dd>" + feature.properties.tags[key] + "</dd>";
+                popupContent = `${popupContent}<dt>${_.capitalize(key)}:</dt><dd>${_.capitalize(feature.properties.tags[key])}</dd>`
               });
               popupContent = popupContent + "</dl>"
               layer.bindPopup(popupContent);
