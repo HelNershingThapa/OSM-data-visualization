@@ -1,9 +1,11 @@
-const map = L.map('map').setView([27.7172, 85.3240], 12);
-let resultLayer = null
+const map = L.map("map").setView([27.7172, 85.324], 12);
+const invalidSelect = 'Choose Amenity:';
+let resultLayer = null;
+
 
 const attribution =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
-const tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+const tileUrl = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
 const tiles = L.tileLayer(tileUrl, { attribution });
 tiles.addTo(map);
 
@@ -11,7 +13,8 @@ function buildOverpassApiUrl(map, overpassQuery, place) {
   let baseUrl = "http://overpass-api.de/api/interpreter";
   let customBounds = {
     kathmandu: "3604583247",
-    chitwan: "3604589410"
+    chitwan: "3604589410",
+
   };
   let defaultQuery = `?data=[out:json][timeout:25];node[${overpassQuery}](${map
     .getBounds()
@@ -30,18 +33,32 @@ function buildOverpassApiUrl(map, overpassQuery, place) {
   let resultUrl = baseUrl + query;
   return resultUrl;
 }
-function submitQuery(){
-  if (resultLayer) map.removeLayer(resultLayer)
+function submitQuery() {
+  if (resultLayer) map.removeLayer(resultLayer);
 
- 
-  const inputValue = document.getElementById('amenity').value
+  document.getElementsByClassName('loading')[0].style.display = 'block';
+  let inputValue = document.getElementById("amenity").value;
+  
+  let title = document.getElementById("title")
+  title.innerHTML = inputValue
+
+  if (inputValue === invalidSelect) {
+    inputValue = "school";
+  }
   async function getMapResource() {
-    let overpassApiUrl = buildOverpassApiUrl(map, `amenity=${inputValue}`, "default");
+    let overpassApiUrl = buildOverpassApiUrl(
+      map,
+      `amenity=${inputValue.toLowerCase()}`,
+      "default"
+    );
+
     const response = await fetch(overpassApiUrl);
     const data = await response.json();
-  
+    debugger
+
     let geoData = osmtogeojson(data);
-  // TODO: remove layer on each query
+    // TODO: remove layer on each query
+    document.getElementsByClassName('loading')[0].style.display = 'none'
     resultLayer = L.geoJson(geoData, {
       style: feature => {
         return { color: "#330099" };
@@ -60,7 +77,7 @@ function submitQuery(){
         }
         return true;
       },
-      onEachFeature: (feature, layer) => {
+      onEachFeature: (feature, layer) => {      
         let popupContent = "";
         let keys = Object.keys(feature.properties.tags);
         keys.forEach(function(key) {

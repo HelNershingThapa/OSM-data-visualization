@@ -15,17 +15,40 @@
   <script src="https://unpkg.com/osmtogeojson@2.2.12/osmtogeojson.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.11/lodash.min.js"></script>
 
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.5/css/bulma.min.css">
+  <script defer src="https://use.fontawesome.com/releases/v5.3.1/js/all.js"></script>
+  
 
-  <title>Fetch JSON from API and map lat lon</title>
+  <title>OSM Data Visualization </title>
 </head>
 
 <body>
-  <div class="query-form">
-    <input id = "amenity" type="text">
-    <button onclick="submitQuery()">Submit</button>
-  </div>
+    <section class="section">
+        <div class="container">
+          <h1 id="title" class="title">
+            Nepal Maps
+          </h1>
+          <p id="subtitle" class="subtitle">
+            My first website with <strong id="bolded">Bulma</strong>!
+          </p>
+        </div>
+      </section>
+
+      <div class="select is-rounded padding-l">
+          <select id="amenity" onchange="submitQuery()">
+              <option >Choose Amenity:</option>
+            <option>School</option>
+            <option>Bank</option>
+            <option>Hospital</option>
+          </select>
+        </div>
+
+        
+        <img class="loading" src="assets/images/loader.svg" > 
   <div class="dashboard-wrapper">
-    <div id="map"></div>
+    <div id="map">
+      
+    </div>
   </div>
 </body>
 <script src="js/main.js"></script>
