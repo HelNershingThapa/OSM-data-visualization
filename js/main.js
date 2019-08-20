@@ -1,7 +1,11 @@
 const map = L.map("map").setView([27.7172, 85.324], 12);
-const invalidSelect = 'Choose Amenity:';
 let resultLayer = null;
+let queryFlag = false;
+let defaultBox = 'ViewPort'
 
+const place = document.getElementById("place")
+const amenity = document.getElementById("amenity")
+const count = document.getElementById('countbox')
 
 const attribution =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
@@ -14,7 +18,6 @@ function buildOverpassApiUrl(map, overpassQuery, place) {
   let customBounds = {
     kathmandu: "3604583247",
     chitwan: "3604589410",
-
   };
   let defaultQuery = `?data=[out:json][timeout:25];node[${overpassQuery}](${map
     .getBounds()
@@ -33,37 +36,57 @@ function buildOverpassApiUrl(map, overpassQuery, place) {
   let resultUrl = baseUrl + query;
   return resultUrl;
 }
-function submitQuery() {
-  if (resultLayer) map.removeLayer(resultLayer);
 
-  document.getElementsByClassName('loading')[0].style.display = 'block';
-  let inputValue = document.getElementById("amenity").value;
-  
-  let title = document.getElementById("title")
-  title.innerHTML = inputValue
-
-  if (inputValue === invalidSelect) {
-    inputValue = "school";
+async function handleLocationToggle() {
+  if (!queryFlag) {
+    amenity.disabled = false
   }
-  async function getMapResource() {
+  const location = { 
+    kathmandu : {
+      lat: 27.7172,
+      lon: 85.3240
+    },
+    chitwan : {
+      lat: 27.6989, 
+      lon: 84.4304
+    },
+  };
+  if (place.value !== defaultBox) await map.panTo(new L.LatLng(location[place.value.toLowerCase()].lat, location[place.value.toLowerCase()].lon));
+  if (queryFlag) {
+    amenity.disabled = false
+    submitQuery();
+  }
+}
+
+function setCount(counter) {
+  count.innerText = `Number of ${amenity.value.toLowerCase()}s in ${place.value}: ${counter}`;
+}
+
+function submitQuery() {
+  queryFlag = true
+  amenity.disabled = true
+  place.disabled = true
+  if (resultLayer) map.removeLayer(resultLayer);
+  document.getElementsByClassName('loading')[0].style.display = 'block';
+  
+  async function getMapResource() {    
     let overpassApiUrl = buildOverpassApiUrl(
       map,
-      `amenity=${inputValue.toLowerCase()}`,
-      "default"
+      `amenity=${amenity.value.toLowerCase()}`,
+      (place.value === defaultBox) ? 'default' : `${place.value.toLowerCase()}`
     );
 
     const response = await fetch(overpassApiUrl);
     const data = await response.json();
-    debugger
-
     let geoData = osmtogeojson(data);
-    // TODO: remove layer on each query
+    
     document.getElementsByClassName('loading')[0].style.display = 'none'
+    place.disabled = false
+    amenity.disabled = false
+
+    let counter = 0;
     resultLayer = L.geoJson(geoData, {
-      style: feature => {
-        return { color: "#330099" };
-      },
-      filter: (feature, layer) => {
+      filter: (feature, _layer) => {
         let isPolygon =
           feature.geometry &&
           feature.geometry.type &&
@@ -77,20 +100,21 @@ function submitQuery() {
         }
         return true;
       },
-      onEachFeature: (feature, layer) => {      
+      onEachFeature: (feature, layer) => {     
+        counter++;         
         let popupContent = "";
         let keys = Object.keys(feature.properties.tags);
         keys.forEach(function(key) {
-          popupContent = `${popupContent}<dt>${_.capitalize(
-            key
-          )}:</dt><dd>${_.capitalize(feature.properties.tags[key])}</dd>`;
+          popupContent = `${popupContent}<dt>${_.capitalize(key)}:</dt><dd>${_.capitalize(feature.properties.tags[key])}</dd>`;
         });
         popupContent = popupContent + "</dl>";
         layer.bindPopup(popupContent);
       }
-    }).addTo(map);
-  }
-  getMapResource();
+    }    
+    ).addTo(map);  
+    setCount(counter);  
+  }  
+  getMapResource();  
+  
 }
-
 // setInterval(getMapResource, 1000);
