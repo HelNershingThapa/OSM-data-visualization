@@ -1,61 +1,101 @@
 <!DOCTYPE html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.4.0/dist/leaflet.css"
+      integrity="sha512-puBpdR0798OZvTTbP4A8Ix/l+A4dHDD0DGqYW6RQ+9jxkRFclaxxQb/SJAWZfWAkuyeQUytO7+7N4QKrDh+drA=="
+      crossorigin=""
+    />
+    <link rel="stylesheet" href="assets/style.css" />
+    <script
+      src="https://unpkg.com/leaflet@1.4.0/dist/leaflet.js"
+      integrity="sha512-QVftwZFqvtRNi0ZyCtsznlKSWOStnDORoefr1enyq5mVL4tmKB3S/EnC3rRJcxCPavG10IcrVGSmPh6Qw5lwrg=="
+      crossorigin=""
+    ></script>
+    <script src="https://unpkg.com/osmtogeojson@2.2.12/osmtogeojson.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.11/lodash.min.js"></script>
 
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.4.0/dist/leaflet.css"
-    integrity="sha512-puBpdR0798OZvTTbP4A8Ix/l+A4dHDD0DGqYW6RQ+9jxkRFclaxxQb/SJAWZfWAkuyeQUytO7+7N4QKrDh+drA=="
-    crossorigin="" />
-  <link rel="stylesheet" href="assets/style.css">
-  <script src="https://unpkg.com/leaflet@1.4.0/dist/leaflet.js"
-    integrity="sha512-QVftwZFqvtRNi0ZyCtsznlKSWOStnDORoefr1enyq5mVL4tmKB3S/EnC3rRJcxCPavG10IcrVGSmPh6Qw5lwrg=="
-    crossorigin=""></script>
-  <script src="https://unpkg.com/osmtogeojson@2.2.12/osmtogeojson.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.11/lodash.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.5/css/bulma.min.css"
+    />
+    <script
+      defer
+      src="https://use.fontawesome.com/releases/v5.3.1/js/all.js"
+    ></script>
 
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.5/css/bulma.min.css">
-  <script defer src="https://use.fontawesome.com/releases/v5.3.1/js/all.js"></script>
-  <title>OSM Data Visualization </title>
-</head>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.4.1/MarkerCluster.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.4.1/MarkerCluster.Default.css"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.4.1/leaflet.markercluster-src.js"></script>
 
-<body>
-      <div class="description-container is-rounded padding-l">
-        <div class="title">
-          Map
+    <title>OSM Data Visualization</title>
+  </head>
+
+  <body>
+    <div class="root">
+      <div class="columns">
+        <div class="menu-wrapper column is-3">
+          <aside class="menu">
+              <p class="menu-label">
+                General
+              </p>
+              <div class="menu-list">
+                  <div class="select">
+                      <select id="place" onchange="handleLocationToggle()">
+                        <option disabled selected>Choose Location:</option>
+                        <option>ViewPort</option>
+                        <option>Kathmandu</option>
+                        <option>Chitwan</option>
+                      </select>
+                    </div>
+                    <div class="select">
+                      <select disabled id="amenity" onchange="submitQuery()">
+                        <option disabled selected>Choose Amenity:</option>
+                        <option>School</option>
+                        <option>Bank</option>
+                        <option>Hospital</option>
+                      </select>
+                    </div>
+              </div>
+              <label class="checkbox">
+              <input type="checkbox">
+              Government
+            </label>
+
+              <ul class="menu-list">
+                <li><a>Dashboard</a></li>
+                <li><a>Customers</a></li>
+              </ul>
+              <p class="menu-label">
+                Transactions
+              </p>
+              <ul class="menu-list">
+                <li><a>Payments</a></li>
+                <li><a>Transfers</a></li>
+                <li><a>Balance</a></li>
+              </ul>
+            </aside>
         </div>
-        <div id ="countbox" >
-          Choose location and amenity first.
+        <div class="dashboard-wrapper column is-9">
+          <div id="map"></div>
         </div>
       </div>
-     <div class="dropdown-wrapper">
-      <div class="select is-rounded padding-l">
-          <select id="place" onchange="handleLocationToggle()">
-            <option disabled selected>Choose Location:</option>
-            <option>ViewPort</option>
-            <option>Kathmandu</option>
-            <option>Chitwan</option>              
-          </select>
-      </div>
-      <div class="select is-rounded padding-l">
-          <select disabled id="amenity" onchange="submitQuery()">
-            <option disabled selected>Choose Amenity:</option>
-            <option>School</option>
-            <option>Bank</option>
-            <option>Hospital</option>
-          </select>
-        </div>
-      </div>        
-
-        
-        <img class="loading" src="assets/images/loader.svg" > 
-  <div class="dashboard-wrapper">
-    
-    <div id="map">
-      
+  
+      <img class="loading" src="assets/images/loader.svg" />
     </div>
-  </div>
-</body>
-<script src="js/main.js"></script>
+  </body>
+  <script src="js/main.js"></script>
 </html>
