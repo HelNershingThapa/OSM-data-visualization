@@ -64,6 +64,11 @@ async function handleLocationToggle() {
 
 function setCount(counter) {
   count.innerText = `Number of ${amenity.value.toLowerCase()}s in ${place.value}: ${counter}`;
+  document.getElementById("lower-secondary-bar").setAttribute("max", counter)
+  document.getElementById("higher-secondary-bar").setAttribute("max", counter)  
+  document.getElementById("primary-bar").setAttribute("max", counter)  
+  document.getElementById("secondary-bar").setAttribute("max", counter)  
+  document.getElementById("kindergarten-bar").setAttribute("max", counter)  
 }
 
 function submitQuery() {
@@ -82,40 +87,25 @@ function submitQuery() {
 
     const response = await fetch(overpassApiUrl);
     const data = await response.json();
-    let geoData = osmtogeojson(data);
+    let  geoData = await osmtogeojson(data);
+    debugger
+ 
+    const ISCED_LEVELS = ['lower_secondary', 'higher_secondary', 'primary', 'secondary', 'kindergarten' ]
+    let levels = geoData.features.map((a) => a.properties.tags["isced:level"]).filter((a) => a!==undefined)
+    // let primary = levels.filter((a)=> a=="primary")
 
-//     function governmentSchool(){
-//       map.removeLayer(resultLayer)
-//       checkbox = document.getElementById('governmentCheck');
-// checkbox.addEventListener('change', e => {
-//     if(e.target.checked){
-//         //do something
-//     }
-// });
-//      governmentLayer =  L.geoJson(geoData, {filter: governmentFilter}).addTo(map);
-//       function governmentFilter(feature){        
-//         if (feature.properties.tags["operator:type"]=="government"){
-//           return true;
-//         }
-      // }
-    // } 
-      for (var i = 0; i < geoData.features.length; i++) {
-        levelname = geoData.features[i].properties.tags["isced:level"] 
-          if (levelname== "primary") {
-              primarycount++;
-          }
-          else if (levelname== "secondary"){
-            secondarycount++;
-          }
-          else {
-            notdefined++
-          }
-      }
-      console.log(primarycount)
-      console.log(secondarycount)
-      console.log(notdefined)      
+    let arr =  ISCED_LEVELS.map((eachLevel)=>levels.filter((eachLevel1)=>eachLevel1===eachLevel))
+    let item = {}
+    ISCED_LEVELS.forEach((a,i)=>{item = { ...item, [a]: arr[i]}}) 
 
+    document.getElementById("lower-secondary-bar").setAttribute("value", item.lower_secondary.length)
+    document.getElementById("higher-secondary-bar").setAttribute("value", item.higher_secondary.length)
+    document.getElementById("primary-bar").setAttribute("value", item.primary.length)
+    document.getElementById("secondary-bar").setAttribute("value", item.secondary.length)
+    document.getElementById("kindergarten-bar").setAttribute("value", item.kindergarten.length)    
+    
     let counter = 0;
+    
     resultLayer = L.geoJson(geoData, {
       filter: (feature, _layer) => {        
         let isPolygon =
@@ -129,10 +119,7 @@ function submitQuery() {
           ).getCenter();
           feature.geometry.coordinates = [polygonCenter.lat, polygonCenter.lng];
         }
-        // governmentSchool()
-        // // if (feature.properties.tags["operator:type"]=="government"){
-        return true;
-        // // }        
+        return true
       },
       onEachFeature: (feature, layer) => {     
         counter++;              
@@ -151,20 +138,31 @@ function submitQuery() {
     place.disabled = false
     amenity.disabled = false
 
-    var markers = L.markerClusterGroup({
+    var clusters = L.markerClusterGroup({
       disableClusteringAtZoom: 18,
       maxClusterRadius: 80,
       spiderfyDistanceMultiplier: 1,
   });
+  
+
+  function showGovernment(){
+    let operatorType = L.geoJson(geoData, {
+      filter: (feature, _layer) => {
+        if (feature.properties.tags["operator:type"]=="government"){
+        return true;
+        }        
+      }
+    })
+  }
+  
    
-  markers.addLayer(resultLayer);    
-  map.addLayer(markers);
-    markers.on('clusterclick', function (a) {
-			a.layer.spiderfy();
-		});    
+  clusters.addLayer(resultLayer);     
+  map.addLayer(clusters);
+         
     setCount(counter);  
   }  
   getMapResource();   
 }
+
 
 // setInterval(getMapResource, 1000);

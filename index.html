@@ -46,6 +46,8 @@
 
   <body>
     <div class="root">
+      <div id="countbox"></div>
+      
       <div class="columns">
         <div class="menu-wrapper column is-3">
           <aside class="menu">
@@ -70,21 +72,30 @@
                       </select>
                     </div>
               </div>
-              <label class="checkbox">
-              <input type="checkbox">
-              Government
-            </label>
+                         
+            <div id="iscedbar">
+             <p><progress id="lower-secondary-bar" class="progress is-info is-large" value="0" max="100"></progress>Lower Secondary</p><br>
+             <p><progress id="higher-secondary-bar" class="progress is-info is-large" value="0" max="100"></progress>Higher Secondary</p> <br>
+              <p><progress id="primary-bar" class="progress is-info is-large" value="0" max="100"></progress>Primary</p><br>
+              <p><progress id="secondary-bar" class="progress is-info is-large" value="0" max="100"></progress>Secondary</p><br>
+              <p><progress id="kindergarten-bar" class="progress is-info is-large" value="0" max="100"></progress>Kindergarten</p><br>              
+            </div>
 
               <ul class="menu-list">
-                <li><a>Dashboard</a></li>
+                <li><a>
+                    <label class="checkbox">
+                        <input type="checkbox" onclick="showGovernment()">
+                        Government
+                      </label>
+                  
+                  </a></li>
                 <li><a>Hello</a></li>
               </ul>
               <p class="menu-label">
-                Transaction
+                Number Filter
               </p>
               <ul class="menu-list">
-                <li><a>Payments</a></li>
-                
+                <li><a>Payments</a></li>                
                 <li><a>Balance</a></li>
               </ul>
             </aside>
