@@ -1,15 +1,19 @@
 const map = L.map("map").setView([27.7172, 85.324], 12);
 let resultLayer = null;
+let governmentLayer = null;
+let geodataforgov = null;
 
 let queryFlag = false;
 let defaultBox = 'ViewPort'
 let primarycount = 0;
       let secondarycount = 0;
       let notdefined = 0;
+      
 
 const place = document.getElementById("place")
 const amenity = document.getElementById("amenity")
 const count = document.getElementById('countbox')
+
 
 const attribution =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
@@ -76,6 +80,8 @@ function submitQuery() {
   amenity.disabled = true
   place.disabled = true
   if (resultLayer) map.removeLayer(resultLayer);
+    
+  
   document.getElementsByClassName('loading')[0].style.display = 'block';
   
   async function getMapResource() {    
@@ -88,8 +94,11 @@ function submitQuery() {
     const response = await fetch(overpassApiUrl);
     const data = await response.json();
     let  geoData = await osmtogeojson(data);
-    debugger
- 
+    geodataforgov = geoData;
+
+
+   
+
     const ISCED_LEVELS = ['lower_secondary', 'higher_secondary', 'primary', 'secondary', 'kindergarten' ]
     let levels = geoData.features.map((a) => a.properties.tags["isced:level"]).filter((a) => a!==undefined)
     // let primary = levels.filter((a)=> a=="primary")
@@ -99,15 +108,15 @@ function submitQuery() {
     ISCED_LEVELS.forEach((a,i)=>{item = { ...item, [a]: arr[i]}}) 
 
     document.getElementById("lower-secondary-bar").setAttribute("value", item.lower_secondary.length)
+    document.getElementById("lower-secondary-bar").innerHTML = "Hello World"
     document.getElementById("higher-secondary-bar").setAttribute("value", item.higher_secondary.length)
     document.getElementById("primary-bar").setAttribute("value", item.primary.length)
     document.getElementById("secondary-bar").setAttribute("value", item.secondary.length)
     document.getElementById("kindergarten-bar").setAttribute("value", item.kindergarten.length)    
     
-    let counter = 0;
-    
+    let counter = 0;    
     resultLayer = L.geoJson(geoData, {
-      filter: (feature, _layer) => {        
+      filter: (feature, _layer) =>{        
         let isPolygon =
           feature.geometry &&
           feature.geometry.type &&
@@ -121,7 +130,7 @@ function submitQuery() {
         }
         return true
       },
-      onEachFeature: (feature, layer) => {     
+      onEachFeature: (feature, layer) =>{     
         counter++;              
         let popupContent = "";
         let keys = Object.keys(feature.properties.tags);
@@ -133,36 +142,44 @@ function submitQuery() {
         layer.bindPopup(popupContent);
       }
     });  
-
     document.getElementsByClassName('loading')[0].style.display = 'none'
     place.disabled = false
     amenity.disabled = false
-
     var clusters = L.markerClusterGroup({
       disableClusteringAtZoom: 18,
       maxClusterRadius: 80,
       spiderfyDistanceMultiplier: 1,
-  });
+      zoomToBoundsOnClick: true 
+    }) 
   
-
-  function showGovernment(){
-    let operatorType = L.geoJson(geoData, {
-      filter: (feature, _layer) => {
-        if (feature.properties.tags["operator:type"]=="government"){
-        return true;
-        }        
-      }
-    })
-  }
-  
-   
-  clusters.addLayer(resultLayer);     
+    clusters.addLayer(resultLayer);    
   map.addLayer(clusters);
-         
-    setCount(counter);  
-  }  
-  getMapResource();   
+   setCount(counter);     
+}  
+  getMapResource();
 }
+function showGovernment(){  
+  if (resultLayer) map.removeLayer(clusters);
+   governmentLayer = L.geoJson(geodataforgov, {
+    filter: (feature, _layer) => {
+      if (feature.properties.tags["operator:type"]=="government"){
+      return true;
+      }  
+    },
+    onEachFeature: (feature, layer) => {                        
+      let popupContent = "";
+      let keys = Object.keys(feature.properties.tags);
+
+      keys.forEach(function(key) {
+        popupContent = `${popupContent}<dt>${_.capitalize(key)}:</dt><dd>${_.capitalize(feature.properties.tags[key])}</dd>`;
+      });
+      popupContent = popupContent + "</dl>";
+      layer.bindPopup(popupContent);
+    }
+  }).addTo(map)  
+}
+
+
 
 
 // setInterval(getMapResource, 1000);
